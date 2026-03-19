@@ -1,0 +1,31 @@
+# ── Secrets & credentials ─────────────────────────────────────────────────────
+.env
+*.env
+
+# ── Session data (personal conversations) ─────────────────────────────────────
+sessions.json
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+proxy.log
+*.log
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ── OS & editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Claude Code project settings ──────────────────────────────────────────────
+.claude/
+
+# ── Embedded REE repo (Gensyn's own repo, not ours) ───────────────────────────
+ree/
+
+# ── REE cache (model weights, receipts — large files) ─────────────────────────
+.cache/
