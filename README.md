@@ -1,5 +1,8 @@
 # REEcord
 
+> **⚠ Early Access — Use at your own risk**
+> REEcord is currently in active development and testing. You may encounter bugs, unexpected errors, or breaking changes at any time. We are not responsible for any issues, data loss, or problems that may arise from using this software. Proceed with caution.
+
 **Record AI conversations on-chain using Gensyn's REE (Reproducible Execution Environment).**
 
 Chat with a local AI model via Ollama, then finalize the conversation — REE generates a cryptographic proof, the receipt is encrypted and uploaded to IPFS, and a transaction is submitted to the Gensyn Testnet. Every conversation becomes a verifiable, permanent on-chain record.
