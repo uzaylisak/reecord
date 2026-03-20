@@ -130,7 +130,8 @@ def get_models():
     try:
         r = _req.get(f"{OLLAMA_URL}/api/tags", timeout=5)
         installed = {m["name"] for m in r.json().get("models", [])}
-    except Exception:
+    except Exception as e:
+        print(f"[Models] Cannot reach Ollama at {OLLAMA_URL}: {e}")
         installed = set()
 
     result = []
@@ -170,11 +171,8 @@ def chat():
                 "created_at": time.time(),
             }
         session = SESSIONS[session_id]
-        session["messages"].append({
-            "role":      "user",
-            "content":   message,
-            "timestamp": time.time(),
-        })
+        user_msg = {"role": "user", "content": message, "timestamp": time.time()}
+        session["messages"].append(user_msg)
         # Build message array for Ollama
         ollama_messages = [
             {"role": m["role"], "content": m["content"]}
@@ -191,8 +189,15 @@ def chat():
         resp_json = r.json()
         assistant_content = resp_json.get("message", {}).get("content", "")
     except _req.exceptions.ConnectionError:
+        # Roll back user message since Ollama failed
+        with _lock:
+            if user_msg in SESSIONS.get(session_id, {}).get("messages", []):
+                SESSIONS[session_id]["messages"].remove(user_msg)
         return jsonify({"error": "Cannot connect to Ollama. Is Ollama running?"}), 503
     except Exception as exc:
+        with _lock:
+            if user_msg in SESSIONS.get(session_id, {}).get("messages", []):
+                SESSIONS[session_id]["messages"].remove(user_msg)
         return jsonify({"error": f"Ollama error: {exc}"}), 503
 
     # Append assistant reply to session and save to disk
@@ -277,7 +282,7 @@ def finalize():
     # Start background thread
     t = threading.Thread(
         target=_run_finalize,
-        args=(job_id, session_id, dict(session)),
+        args=(job_id, session_id, json.loads(json.dumps(session))),  # deep copy
         daemon=True
     )
     t.start()
@@ -424,8 +429,20 @@ def proxy(path):
         )
     except _req.exceptions.ConnectionError:
         return Response(
-            json.dumps({"error": "Cannot connect to Ollama. Is http://localhost:11436 running?"}),
+            json.dumps({"error": f"Cannot connect to Ollama at {OLLAMA_URL}. Is Ollama running?"}),
             status=503,
+            content_type="application/json",
+        )
+    except _req.exceptions.Timeout:
+        return Response(
+            json.dumps({"error": "Ollama request timed out."}),
+            status=504,
+            content_type="application/json",
+        )
+    except Exception as exc:
+        return Response(
+            json.dumps({"error": f"Proxy error: {exc}"}),
+            status=502,
             content_type="application/json",
         )
 

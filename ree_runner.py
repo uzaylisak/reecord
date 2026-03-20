@@ -81,8 +81,8 @@ def generate_receipt(prompt: str) -> str:
 
     except subprocess.TimeoutExpired:
         try:
-            proc.kill()
-        except Exception:
+            proc.kill()  # proc is always defined before wait/run raises TimeoutExpired
+        except (NameError, Exception):
             pass
         raise RuntimeError(
             f"REE timed out after {REE_TIMEOUT}s — Docker container may be stuck.\n"

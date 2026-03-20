@@ -448,17 +448,20 @@
       el.innerHTML = '<div style="padding:12px 10px;font-size:12px;color:rgba(255,255,255,0.2);">No sessions yet</div>';
       return;
     }
-    el.innerHTML = sessions.map(s => `
+    el.innerHTML = sessions.map(s => {
+      const sid = escHtml(s.session_id);
+      const model = escHtml(s.model || '');
+      return `
       <div class="session-item ${s.finalized ? 'finalized' : ''} ${currentSession === s.session_id ? 'active' : ''}"
-           onclick="loadSession('${s.session_id}')">
+           onclick="loadSession('${sid}')">
         <div class="session-icon">${s.finalized ? '✓' : '💬'}</div>
         <div class="session-body">
           <div class="session-preview">${escHtml(s.preview || 'Empty session')}</div>
-          <div class="session-meta">${s.model} · ${s.message_count} msg${s.message_count !== 1 ? 's' : ''}</div>
+          <div class="session-meta">${model} · ${s.message_count} msg${s.message_count !== 1 ? 's' : ''}</div>
         </div>
-        <button class="session-del" onclick="deleteSession(event,'${s.session_id}')" title="Delete">×</button>
+        <button class="session-del" onclick="deleteSession(event,'${sid}')" title="Delete">×</button>
       </div>
-    `).join('');
+    `}).join('');
   }
 
   async function loadSession(sid) {

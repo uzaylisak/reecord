@@ -164,7 +164,7 @@ def submit_receipt(receipt_path: str) -> dict:
 
     receipt_hash = (
         receipt.get("hashes", {}).get("receipt_hash")
-        or hashlib.sha256(receipt_path.encode()).hexdigest()
+        or hashlib.sha256(json.dumps(receipt, sort_keys=True).encode()).hexdigest()
     )
     model_name = receipt.get("model", {}).get("name", "unknown")
 
@@ -190,12 +190,16 @@ def submit_receipt(receipt_path: str) -> dict:
 
     _result = {}
     _error  = {}
+    _lock   = threading.Lock()
 
     def _run():
         try:
-            _result["tx_hash"] = _submit_onchain(receipt_hash, ipfs_cid, model_name)
+            tx = _submit_onchain(receipt_hash, ipfs_cid, model_name)
+            with _lock:
+                _result["tx_hash"] = tx
         except Exception as exc:
-            _error["msg"] = str(exc)
+            with _lock:
+                _error["msg"] = str(exc)
 
     t = threading.Thread(target=_run, daemon=True)
     t.start()
@@ -206,8 +210,9 @@ def submit_receipt(receipt_path: str) -> dict:
             f"Chain submission timed out after {CHAIN_TIMEOUT}s "
             "— testnet may be congested, try again later."
         )
-    if _error.get("msg"):
-        raise RuntimeError(f"Chain error: {_error['msg']}")
+    with _lock:
+        if _error.get("msg"):
+            raise RuntimeError(f"Chain error: {_error['msg']}")
 
     tx_hash = _result["tx_hash"]
     return {

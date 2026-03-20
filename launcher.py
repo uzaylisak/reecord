@@ -159,7 +159,7 @@ def start_proxy(ollama_port: int = 11436):
         for _ in range(16):
             time.sleep(0.5)
             try:
-                urllib.request.urlopen("http://localhost:11434/reerecord/status", timeout=1)
+                urllib.request.urlopen("http://localhost:11435/reerecord/status", timeout=1)
                 print("[Launcher] Proxy ready ✓")
                 return
             except Exception:
@@ -171,7 +171,7 @@ def proxy_running() -> bool:
     if _proxy_proc is None or _proxy_proc.poll() is not None:
         return False
     try:
-        urllib.request.urlopen("http://localhost:11434/reerecord/status", timeout=1)
+        urllib.request.urlopen("http://localhost:11435/reerecord/status", timeout=1)
         return True
     except Exception:
         return False
