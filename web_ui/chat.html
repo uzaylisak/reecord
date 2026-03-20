@@ -263,10 +263,12 @@
     min-height: 46px;
     max-height: 140px;
     line-height: 1.5;
+    overflow: hidden;
     transition: border-color 0.2s;
   }
   #msg-input:focus { border-color: rgba(224,49,49,0.4); }
   #msg-input::placeholder { color: rgba(255,255,255,0.25); }
+  #msg-input::-webkit-scrollbar { display: none; }
   .send-btn {
     background: #e03131;
     border: none;
@@ -358,7 +360,7 @@
 
   <div id="messages">
     <div class="empty-state" id="empty-state">
-      <div class="icon">⬡</div>
+      <div class="icon"><div style="width:32px;height:32px;background:#e03131;border-radius:50%;box-shadow:0 0 16px rgba(224,49,49,0.5);"></div></div>
       <p>Start a conversation.<br>When ready, click <strong style="color:rgba(255,255,255,0.6)">Finalize &amp; Record</strong> to anchor it on-chain.</p>
     </div>
   </div>
@@ -370,7 +372,7 @@
     </div>
     <div class="finalize-row">
       <button class="finalize-btn" id="finalize-btn" onclick="finalizeSession()" disabled>
-        ⬡ Finalize &amp; Record
+        Finalize &amp; Record
       </button>
       <span class="finalize-status" id="finalize-status"></span>
     </div>
@@ -470,7 +472,12 @@
       if (finalized) {
         const status = document.getElementById('finalize-status');
         status.className = 'finalize-status done';
-        status.textContent = d.tx_hash ? '✓ Recorded — TX: ' + d.tx_hash.slice(0,10) + '…' : '✓ Finalized';
+        if (d.tx_hash) {
+          const explorerUrl = 'https://gensyn-testnet.explorer.alchemy.com/tx/' + d.tx_hash;
+          status.innerHTML = '✓ Recorded — <a href="' + explorerUrl + '" target="_blank" style="color:#4ade80;text-decoration:underline;">TX: ' + d.tx_hash.slice(0,10) + '…</a>';
+        } else {
+          status.textContent = '✓ Finalized';
+        }
       }
     } catch(e) {}
   }
@@ -478,7 +485,7 @@
   function renderMessages(messages) {
     const el = document.getElementById('messages');
     if (!messages.length) {
-      el.innerHTML = '<div class="empty-state" id="empty-state"><div class="icon">⬡</div><p>Start a conversation.<br>When ready, click <strong style="color:rgba(255,255,255,0.6)">Finalize &amp; Record</strong> to anchor it on-chain.</p></div>';
+      el.innerHTML = '<div class="empty-state" id="empty-state"><div class="icon"><div style="width:32px;height:32px;background:#e03131;border-radius:50%;box-shadow:0 0 16px rgba(224,49,49,0.5);"></div></div><p>Start a conversation.<br>When ready, click <strong style="color:rgba(255,255,255,0.6)">Finalize &amp; Record</strong> to anchor it on-chain.</p></div>';
       return;
     }
     el.innerHTML = messages.map(m =>
@@ -524,8 +531,17 @@
     const msgEl = document.getElementById('messages');
     const emptyState = document.getElementById('empty-state');
     if (emptyState) emptyState.remove();
-    msgEl.innerHTML += `<div class="msg user">${escHtml(msg)}</div>`;
-    msgEl.innerHTML += `<div class="msg thinking" id="thinking">Thinking…</div>`;
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'msg user';
+    userDiv.textContent = msg;
+    msgEl.appendChild(userDiv);
+
+    const thinkDiv = document.createElement('div');
+    thinkDiv.className = 'msg thinking';
+    thinkDiv.id = 'thinking';
+    thinkDiv.textContent = 'Thinking…';
+    msgEl.appendChild(thinkDiv);
     msgEl.scrollTop = msgEl.scrollHeight;
 
     try {
@@ -540,14 +556,23 @@
 
       const thinking = document.getElementById('thinking');
       if (thinking) thinking.remove();
-      msgEl.innerHTML += `<div class="msg assistant">${escHtml(d.response)}</div>`;
+
+      const assistDiv = document.createElement('div');
+      assistDiv.className = 'msg assistant';
+      assistDiv.textContent = d.response;
+      msgEl.appendChild(assistDiv);
       msgEl.scrollTop = msgEl.scrollHeight;
       document.getElementById('finalize-btn').disabled = false;
       loadSessions();
     } catch(e) {
       const thinking = document.getElementById('thinking');
       if (thinking) thinking.remove();
-      msgEl.innerHTML += `<div class="msg assistant" style="color:#f87171;">Error: ${escHtml(e.message)}</div>`;
+
+      const errDiv = document.createElement('div');
+      errDiv.className = 'msg assistant';
+      errDiv.style.color = '#f87171';
+      errDiv.textContent = 'Error: ' + e.message;
+      msgEl.appendChild(errDiv);
       msgEl.scrollTop = msgEl.scrollHeight;
     }
 
@@ -602,9 +627,12 @@
           setTimeout(hideProgress, 800);
           status.className = 'finalize-status done';
           const tx = d.result?.tx_hash || '';
-          status.textContent = tx
-            ? '✓ Recorded — TX: ' + tx.slice(0,10) + '… — view on reecord.click'
-            : '✓ Recorded on-chain';
+          if (tx) {
+            const explorerUrl = 'https://gensyn-testnet.explorer.alchemy.com/tx/' + tx;
+            status.innerHTML = '✓ Recorded — <a href="' + explorerUrl + '" target="_blank" style="color:#4ade80;text-decoration:underline;">TX: ' + tx.slice(0,10) + '…</a> — <a href="https://reecord.click" target="_blank" style="color:#4ade80;text-decoration:underline;">view on reecord.click</a>';
+          } else {
+            status.textContent = '✓ Recorded on-chain';
+          }
           loadSessions();
         } else if (d.status === 'failed') {
           clearInterval(finalizePolling);
