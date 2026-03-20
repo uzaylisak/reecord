@@ -58,7 +58,7 @@ except ImportError:
 
 # ── Settings ─────────────────────────────────────────────────────────────────
 OLLAMA_URL  = os.getenv("REE_OLLAMA_URL", "http://localhost:11436")
-PROXY_PORT  = int(os.getenv("REE_PROXY_PORT", "11434"))
+PROXY_PORT  = int(os.getenv("REE_PROXY_PORT", "11435"))
 PROJECT_DIR = Path(__file__).parent
 
 # Ollama name → HuggingFace name (REE-compatible models)

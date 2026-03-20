@@ -130,7 +130,7 @@ def start_proxy(ollama_port: int = 11436):
         environ = os.environ.copy()
         environ.update(env)
         environ["REE_OLLAMA_URL"] = f"http://localhost:{ollama_port}"
-        environ["REE_PROXY_PORT"] = "11434"
+        environ["REE_PROXY_PORT"] = "11435"
 
         python_exe   = sys.executable
         proxy_script = str(PROJECT_DIR / "ollama_proxy.py")
