@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REEcord — Setup</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0c0c0e;
+    color: #fff;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 40px;
+  }
+  .logo-dot {
+    width: 28px; height: 28px;
+    background: #e03131;
+    border-radius: 50%;
+    box-shadow: 0 0 16px rgba(224,49,49,0.5);
+  }
+  .logo-text {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: #e03131; }
+  .card {
+    background: #141416;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 40px;
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+  .status-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+  .status-pill {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 99px;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.5);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-pill.ok { border-color: rgba(74,222,128,0.3); color: #4ade80; }
+  .status-pill.err { border-color: rgba(248,113,113,0.3); color: #f87171; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .field { margin-bottom: 18px; }
+  input[type="text"], input[type="password"] {
+    width: 100%;
+    background: #0c0c0e;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: rgba(224,49,49,0.5); }
+  .hint {
+    font-size: 12px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+  .hint a { color: rgba(224,49,49,0.8); text-decoration: none; }
+  .hint a:hover { color: #e03131; }
+  .divider { height: 1px; background: rgba(255,255,255,0.06); margin: 24px 0; }
+  .btn {
+    width: 100%;
+    background: #e03131;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 14px;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+  }
+  .btn:hover { background: #c92a2a; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .warning {
+    background: rgba(251,191,36,0.08);
+    border: 1px solid rgba(251,191,36,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: rgba(251,191,36,0.9);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .error-msg {
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #f87171;
+    margin-top: 16px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <div class="logo-dot"></div>
+  <div class="logo-text">REE<span>cord</span></div>
+</div>
+
+<div class="card">
+  <h1>First-time setup</h1>
+  <p class="subtitle">Enter your credentials to start recording AI conversations on-chain.</p>
+
+  <div class="status-row" id="status-row">
+    <div class="status-pill" id="pill-docker"><span class="dot"></span> Docker</div>
+    <div class="status-pill" id="pill-ollama"><span class="dot"></span> Ollama</div>
+    <div class="status-pill" id="pill-pkgs"><span class="dot"></span> Packages</div>
+  </div>
+
+  <div class="warning">
+    ⚠ Use a dedicated empty wallet for testnet — never your main wallet.
+  </div>
+
+  <div class="field">
+    <label>Gensyn Private Key</label>
+    <input type="password" id="pk" placeholder="0x..." autocomplete="off">
+    <div class="hint">MetaMask → Account Details → Export Private Key. <a href="https://faucet.gensyn.ai" target="_blank">Get testnet ETH ↗</a></div>
+  </div>
+
+  <div class="field">
+    <label>Wallet Address</label>
+    <input type="text" id="addr" placeholder="0x..." autocomplete="off">
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="field">
+    <label>Pinata JWT <span style="color:rgba(255,255,255,0.25);font-size:11px;">(optional)</span></label>
+    <input type="password" id="pinata" placeholder="eyJ..." autocomplete="off">
+    <div class="hint">Without Pinata, receipts use a local hash fallback instead of IPFS. <a href="https://app.pinata.cloud" target="_blank">Get free JWT ↗</a></div>
+  </div>
+
+  <button class="btn" id="save-btn" onclick="saveConfig()">Save &amp; Continue →</button>
+  <div class="error-msg" id="err-msg"></div>
+</div>
+
+<script>
+  async function checkStatus() {
+    try {
+      const r = await fetch('/api/status');
+      const d = await r.json();
+      setPill('pill-docker', d.docker, 'Docker');
+      setPill('pill-ollama', d.ollama, 'Ollama' + (d.ollama ? ' :' + d.ollama_port : ''));
+      setPill('pill-pkgs',   d.packages, 'Packages');
+    } catch(e) {}
+  }
+
+  function setPill(id, ok, label) {
+    const el = document.getElementById(id);
+    el.className = 'status-pill ' + (ok ? 'ok' : 'err');
+    el.innerHTML = `<span class="dot"></span> ${label}`;
+  }
+
+  async function saveConfig() {
+    const btn  = document.getElementById('save-btn');
+    const err  = document.getElementById('err-msg');
+    const pk   = document.getElementById('pk').value.trim();
+    const addr = document.getElementById('addr').value.trim();
+    const jwt  = document.getElementById('pinata').value.trim();
+
+    err.style.display = 'none';
+    if (!pk) { showErr('Private key is required.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const r = await fetch('/api/save-config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ private_key: pk, wallet_address: addr, pinata_jwt: jwt })
+      });
+      const d = await r.json();
+      if (d.error) { showErr(d.error); btn.disabled = false; btn.textContent = 'Save & Continue →'; return; }
+      window.location.href = d.redirect || '/chat';
+    } catch(e) {
+      showErr('Connection error: ' + e.message);
+      btn.disabled = false;
+      btn.textContent = 'Save & Continue →';
+    }
+  }
+
+  function showErr(msg) {
+    const el = document.getElementById('err-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  checkStatus();
+</script>
+</body>
+</html>
