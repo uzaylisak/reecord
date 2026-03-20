@@ -378,6 +378,8 @@
 </div>
 
 <script>
+  const PROXY = 'http://localhost:11434';
+
   let currentSession = null;
   let isWaiting = false;
   let finalizeJobId = null;
@@ -393,7 +395,7 @@
 
   async function loadModels() {
     try {
-      const r = await fetch('/reerecord/models');
+      const r = await fetch(PROXY + '/reerecord/models');
       const d = await r.json();
       const sel = document.getElementById('model-select');
       sel.innerHTML = '';
@@ -414,7 +416,7 @@
 
   async function checkProxyStatus() {
     try {
-      const r = await fetch('/reerecord/status');
+      const r = await fetch(PROXY + '/reerecord/status');
       const d = await r.json();
       const dot = document.getElementById('status-dot');
       const lbl = document.getElementById('status-label');
@@ -431,7 +433,7 @@
   // ── Sessions ──────────────────────────────────────────────────────────────
   async function loadSessions() {
     try {
-      const r = await fetch('/reerecord/sessions');
+      const r = await fetch(PROXY + '/reerecord/sessions');
       const d = await r.json();
       renderSessions(d.sessions || []);
     } catch(e) {}
@@ -460,7 +462,7 @@
     currentSession = sid;
     await loadSessions();
     try {
-      const r = await fetch('/reerecord/session/' + sid);
+      const r = await fetch(PROXY + '/reerecord/session/' + sid);
       const d = await r.json();
       renderMessages(d.messages || []);
       const finalized = d.finalized;
@@ -498,7 +500,7 @@
 
   async function deleteSession(e, sid) {
     e.stopPropagation();
-    await fetch('/reerecord/session/' + sid, { method: 'DELETE' });
+    await fetch(PROXY + '/reerecord/session/' + sid, { method: 'DELETE' });
     if (currentSession === sid) newSession();
     else loadSessions();
   }
@@ -527,7 +529,7 @@
     msgEl.scrollTop = msgEl.scrollHeight;
 
     try {
-      const r = await fetch('/reerecord/chat', {
+      const r = await fetch(PROXY + '/reerecord/chat', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ session_id: currentSession, message: msg, model })
@@ -564,7 +566,7 @@
     showProgress(10);
 
     try {
-      const r = await fetch('/reerecord/finalize', {
+      const r = await fetch(PROXY + '/reerecord/finalize', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ session_id: currentSession })
@@ -585,7 +587,7 @@
     clearInterval(finalizePolling);
     finalizePolling = setInterval(async () => {
       try {
-        const r = await fetch('/reerecord/finalize/' + jobId);
+        const r = await fetch(PROXY + '/reerecord/finalize/' + jobId);
         const d = await r.json();
         const status = document.getElementById('finalize-status');
 
