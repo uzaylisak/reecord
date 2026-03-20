@@ -110,6 +110,22 @@ If `.env` is not configured, the setup page will open automatically.
 
 ---
 
+## Updating
+
+If you already have REEcord installed, pull the latest changes:
+
+```bash
+git pull
+```
+
+Then restart REEcord:
+
+```bash
+python launcher.py
+```
+
+---
+
 ## Usage
 
 1. **Chat** — Type a message and press Enter (or click Send)
