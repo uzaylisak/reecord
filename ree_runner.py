@@ -65,15 +65,27 @@ def generate_receipt(prompt: str) -> str:
         kwargs["stdout"] = subprocess.PIPE
         kwargs["stderr"] = subprocess.STDOUT
 
+    proc = None
     try:
         if sys.platform == "win32":
-            # On Windows: stream output line by line so it appears in real-time
+            # On Windows: read stdout in a daemon thread so the main thread
+            # can apply a hard timeout via proc.wait(timeout=...).
+            # Previously, iterating proc.stdout directly had no timeout —
+            # if Docker hung, the loop would run forever.
             proc = subprocess.Popen(cmd, **kwargs, text=True)
-            for line in proc.stdout:
-                line = line.rstrip()
-                if line:
-                    print(f"[REE] {line}", flush=True)
-            proc.wait(timeout=REE_TIMEOUT)
+
+            def _read_stdout():
+                for line in proc.stdout:
+                    line = line.rstrip()
+                    if line:
+                        print(f"[REE] {line}", flush=True)
+
+            import threading as _threading
+            reader = _threading.Thread(target=_read_stdout, daemon=True)
+            reader.start()
+
+            proc.wait(timeout=REE_TIMEOUT)  # hard timeout applies here
+            reader.join(timeout=5)           # let reader finish flushing
             returncode = proc.returncode
         else:
             proc = subprocess.run(cmd, timeout=REE_TIMEOUT, **kwargs)
@@ -81,8 +93,9 @@ def generate_receipt(prompt: str) -> str:
 
     except subprocess.TimeoutExpired:
         try:
-            proc.kill()  # proc is always defined before wait/run raises TimeoutExpired
-        except (NameError, Exception):
+            if proc is not None:
+                proc.kill()
+        except Exception:
             pass
         raise RuntimeError(
             f"REE timed out after {REE_TIMEOUT}s — Docker container may be stuck.\n"
