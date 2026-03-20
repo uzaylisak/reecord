@@ -37,6 +37,10 @@ TASKS_ROOT     = Path.home() / ".cache" / "gensyn"
 REE_TIMEOUT    = 600   # 10-minute hard cap
 
 
+# Tracks the currently running REE subprocess for external cancellation
+_current_proc = None
+
+
 def generate_receipt(prompt: str) -> str:
     """
     Run REE with *prompt*, return path to the generated receipt JSON.
@@ -65,14 +69,12 @@ def generate_receipt(prompt: str) -> str:
         kwargs["stdout"] = subprocess.PIPE
         kwargs["stderr"] = subprocess.STDOUT
 
+    global _current_proc
     proc = None
     try:
         if sys.platform == "win32":
-            # On Windows: read stdout in a daemon thread so the main thread
-            # can apply a hard timeout via proc.wait(timeout=...).
-            # Previously, iterating proc.stdout directly had no timeout —
-            # if Docker hung, the loop would run forever.
             proc = subprocess.Popen(cmd, **kwargs, text=True)
+            _current_proc = proc
 
             def _read_stdout():
                 for line in proc.stdout:
@@ -84,11 +86,13 @@ def generate_receipt(prompt: str) -> str:
             reader = _threading.Thread(target=_read_stdout, daemon=True)
             reader.start()
 
-            proc.wait(timeout=REE_TIMEOUT)  # hard timeout applies here
-            reader.join(timeout=5)           # let reader finish flushing
+            proc.wait(timeout=REE_TIMEOUT)
+            reader.join(timeout=5)
             returncode = proc.returncode
         else:
-            proc = subprocess.run(cmd, timeout=REE_TIMEOUT, **kwargs)
+            proc = subprocess.Popen(cmd, **kwargs)
+            _current_proc = proc
+            proc.wait(timeout=REE_TIMEOUT)
             returncode = proc.returncode
 
     except subprocess.TimeoutExpired:
@@ -101,6 +105,8 @@ def generate_receipt(prompt: str) -> str:
             f"REE timed out after {REE_TIMEOUT}s — Docker container may be stuck.\n"
             "Try: docker ps  to see if a container is stuck, then docker kill <id>"
         )
+    finally:
+        _current_proc = None
 
     print(f"[REE] Process finished (exit={returncode})", flush=True)
 

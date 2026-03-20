@@ -78,10 +78,39 @@ SUPPORTED_MODELS = {
     "mistral:7b":   "mistralai/Mistral-7B-Instruct-v0.3",
 }
 
-# ─── Session persistence ─────────────────────────────────────────────────────
-SESSIONS_FILE = PROJECT_DIR / "sessions.json"
-FINALIZE_JOBS = {}
-_lock = threading.Lock()
+# ─── Session + job persistence ───────────────────────────────────────────────
+SESSIONS_FILE     = PROJECT_DIR / "sessions.json"
+FINALIZE_JOBS_FILE = PROJECT_DIR / "finalize_jobs.json"
+FINALIZE_JOBS     = {}
+_lock             = threading.Lock()
+
+
+def _load_jobs() -> dict:
+    if not FINALIZE_JOBS_FILE.exists():
+        return {}
+    try:
+        with open(FINALIZE_JOBS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        # Mark any jobs that were still running as interrupted
+        for job in data.values():
+            if job.get("status") in ("pending", "running"):
+                job["status"]     = "interrupted"
+                job["step"]       = "interrupted"
+                job["step_label"] = "Interrupted — server was restarted"
+                job["error"]      = "Server restarted while job was running"
+        print(f"[Jobs] {len(data)} job(s) loaded from disk.")
+        return data
+    except Exception as e:
+        print(f"[Jobs] Load error: {e}")
+        return {}
+
+
+def _save_jobs():
+    try:
+        with open(FINALIZE_JOBS_FILE, "w", encoding="utf-8") as f:
+            json.dump(FINALIZE_JOBS, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"[Jobs] Save error: {e}")
 
 
 def _load_sessions() -> dict:
@@ -107,7 +136,8 @@ def _save_sessions():
         print(f"[Sessions] Save error: {e}")
 
 
-SESSIONS = _load_sessions()
+SESSIONS      = _load_sessions()
+FINALIZE_JOBS = _load_jobs()
 
 app = Flask(__name__)
 
@@ -300,6 +330,37 @@ def finalize_status(job_id):
     return jsonify(job)
 
 
+@app.route("/reerecord/finalize/<job_id>/cancel", methods=["POST"])
+def finalize_cancel(job_id):
+    """Cancel a running finalize job."""
+    job = FINALIZE_JOBS.get(job_id)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+    if job.get("status") not in ("pending", "running"):
+        return jsonify({"error": "Job is not running"}), 400
+
+    # Kill the REE subprocess if it's running
+    try:
+        import ree_runner
+        if ree_runner._current_proc is not None:
+            ree_runner._current_proc.kill()
+            print(f"[Cancel] Killed REE process for job {job_id[:8]}…")
+    except Exception as e:
+        print(f"[Cancel] Could not kill REE proc: {e}")
+
+    with _lock:
+        FINALIZE_JOBS[job_id].update({
+            "status":     "cancelled",
+            "step":       "cancelled",
+            "step_label": "Cancelled by user",
+            "error":      "Cancelled by user",
+        })
+        _save_jobs()
+
+    print(f"[Cancel] Job {job_id[:8]}… cancelled.")
+    return jsonify({"ok": True})
+
+
 def _run_finalize(job_id, session_id, session):
     """Background: conversation → REE → IPFS → Chain."""
     sys.path.insert(0, str(PROJECT_DIR))
@@ -307,6 +368,7 @@ def _run_finalize(job_id, session_id, session):
     def _upd(**kw):
         with _lock:
             FINALIZE_JOBS[job_id].update(kw)
+            _save_jobs()
 
     try:
         messages = session["messages"]
@@ -383,6 +445,7 @@ def _run_finalize(job_id, session_id, session):
                 SESSIONS[session_id]["tx_hash"]   = result.get("tx_hash", "")
                 SESSIONS[session_id]["ipfs_cid"]  = result.get("ipfs_cid", "")
             _save_sessions()
+            _save_jobs()
 
         tx = result.get("tx_hash", "")
         print(f"[Finalize] ✓ Done  status={result.get('status','?')}  TX={tx}", flush=True)
@@ -398,12 +461,14 @@ def _run_finalize(job_id, session_id, session):
 # ─── /reerecord/status ───────────────────────────────────────────────────────
 @app.route("/reerecord/status", methods=["GET"])
 def proxy_status():
+    active = sum(1 for j in FINALIZE_JOBS.values() if j.get("status") in ("pending", "running"))
     return jsonify({
-        "proxy":    "running",
-        "sessions": len(SESSIONS),
-        "jobs":     len(FINALIZE_JOBS),
-        "ollama":   OLLAMA_URL,
-        "port":     PROXY_PORT,
+        "proxy":       "running",
+        "sessions":    len(SESSIONS),
+        "jobs":        len(FINALIZE_JOBS),
+        "active_jobs": active,
+        "ollama":      OLLAMA_URL,
+        "port":        PROXY_PORT,
     })
 
 # ─── Passthrough ─────────────────────────────────────────────────────────────

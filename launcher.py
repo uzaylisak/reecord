@@ -316,5 +316,29 @@ if __name__ == "__main__":
         app.run(host="0.0.0.0", port=LAUNCHER_PORT, debug=False, use_reloader=False)
     except KeyboardInterrupt:
         print("\n[Launcher] Shutting down…")
+
+        # Graceful shutdown: wait for active finalize jobs
+        try:
+            import urllib.request as _ur
+            import json as _json
+            resp = _ur.urlopen("http://localhost:11435/reerecord/status", timeout=2)
+            active = _json.loads(resp.read()).get("active_jobs", 0)
+            if active > 0:
+                print(f"[Launcher] Waiting for {active} active finalize job(s) to complete…")
+                print("[Launcher] Press Ctrl+C again to force quit.")
+                for i in range(60):
+                    time.sleep(5)
+                    try:
+                        resp2 = _ur.urlopen("http://localhost:11435/reerecord/status", timeout=2)
+                        active2 = _json.loads(resp2.read()).get("active_jobs", 0)
+                        if active2 == 0:
+                            print("[Launcher] All jobs complete.")
+                            break
+                        print(f"[Launcher] Still waiting… ({active2} job(s) running, {(i+1)*5}s elapsed)")
+                    except Exception:
+                        break
+        except Exception:
+            pass
+
         if _proxy_proc and _proxy_proc.poll() is None:
             _proxy_proc.terminate()

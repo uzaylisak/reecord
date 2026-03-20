@@ -310,7 +310,35 @@
     color: rgba(255,255,255,0.4);
   }
   .finalize-status.done { color: #4ade80; }
-  .finalize-status.err { color: #f87171; }
+  .finalize-status.err  { color: #f87171; }
+  .cancel-btn {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    color: #f87171;
+    border-radius: 9px;
+    padding: 9px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .cancel-btn:hover { background: rgba(248,113,113,0.2); }
+
+  /* ── REE running warning banner ── */
+  #ree-warning {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(234,179,8,0.15);
+    border-bottom: 1px solid rgba(234,179,8,0.4);
+    color: #fde047;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 9999;
+  }
 
   /* ── Progress bar ── */
   #progress-bar {
@@ -325,6 +353,11 @@
 </style>
 </head>
 <body>
+
+<!-- REE running warning banner -->
+<div id="ree-warning">
+  REE inference is running — do not close this window until it finishes.
+</div>
 
 <!-- Sidebar -->
 <div id="sidebar">
@@ -375,6 +408,9 @@
       <button class="finalize-btn" id="finalize-btn" onclick="finalizeSession()" disabled>
         Finalize &amp; Record
       </button>
+      <button class="cancel-btn" id="cancel-btn" onclick="cancelFinalize()" style="display:none;">
+        Cancel
+      </button>
       <span class="finalize-status" id="finalize-status"></span>
     </div>
   </div>
@@ -395,6 +431,14 @@
     checkProxyStatus();
     setInterval(checkProxyStatus, 10000);
   }
+
+  // Warn user if they try to close while REE is running
+  window.addEventListener('beforeunload', (e) => {
+    if (finalizeJobId && document.getElementById('ree-warning').style.display === 'block') {
+      e.preventDefault();
+      e.returnValue = 'REE inference is still running. Are you sure you want to leave?';
+    }
+  });
 
   async function loadModels() {
     try {
@@ -603,6 +647,10 @@
       const d = await r.json();
       if (d.error) throw new Error(d.error);
       finalizeJobId = d.job_id;
+      document.getElementById('cancel-btn').style.display = 'inline-block';
+      document.getElementById('cancel-btn').disabled = false;
+      document.getElementById('cancel-btn').textContent = 'Cancel';
+      showReeWarning(true);
       pollFinalize(finalizeJobId);
     } catch(e) {
       status.className = 'finalize-status err';
@@ -625,10 +673,13 @@
           if (d.step === 'ree') showProgress(30);
           else if (d.step === 'receipt') showProgress(60);
           else if (d.step === 'chain') showProgress(80);
+          showReeWarning(true);
         } else if (d.status === 'done') {
           clearInterval(finalizePolling);
           showProgress(100);
           setTimeout(hideProgress, 800);
+          showReeWarning(false);
+          document.getElementById('cancel-btn').style.display = 'none';
           status.className = 'finalize-status done';
           const tx = d.result?.tx_hash || '';
           if (tx) {
@@ -638,16 +689,32 @@
             status.textContent = '✓ Recorded on-chain';
           }
           loadSessions();
-        } else if (d.status === 'failed') {
+        } else if (d.status === 'failed' || d.status === 'cancelled' || d.status === 'interrupted') {
           clearInterval(finalizePolling);
           hideProgress();
+          showReeWarning(false);
+          document.getElementById('cancel-btn').style.display = 'none';
           const status2 = document.getElementById('finalize-status');
           status2.className = 'finalize-status err';
-          status2.textContent = 'Failed: ' + (d.error || 'unknown error');
+          status2.textContent = (d.status === 'cancelled' ? 'Cancelled.' : 'Failed: ' + (d.error || 'unknown error'));
           document.getElementById('finalize-btn').disabled = false;
         }
       } catch(e) {}
     }, 3000);
+  }
+
+  async function cancelFinalize() {
+    if (!finalizeJobId) return;
+    const btn = document.getElementById('cancel-btn');
+    btn.disabled = true;
+    btn.textContent = 'Cancelling…';
+    try {
+      await fetch(PROXY + '/reerecord/finalize/' + finalizeJobId + '/cancel', { method: 'POST' });
+    } catch(e) {}
+  }
+
+  function showReeWarning(show) {
+    document.getElementById('ree-warning').style.display = show ? 'block' : 'none';
   }
 
   function showProgress(pct) {
