@@ -373,6 +373,8 @@
   </div>
   <div class="sidebar-footer">
     <button class="reset-btn" onclick="resetConfig()">⚙ Change credentials</button>
+    <button class="reset-btn" id="clear-cache-btn" onclick="clearCache()" title="Use if experiencing errors or after updates">Clear Cache</button>
+    <div id="clear-cache-hint" style="font-size:10px;color:rgba(255,255,255,0.2);text-align:center;margin-top:-4px;padding:0 4px;">Use if experiencing errors</div>
     <a href="https://t.me/+0vcuDovbHVc4ZTk8" target="_blank" class="reset-btn" style="text-align:center;text-decoration:none;display:block;">Support</a>
   </div>
 </div>
@@ -701,6 +703,21 @@
         }
       } catch(e) {}
     }, 3000);
+  }
+
+  async function clearCache() {
+    const btn = document.getElementById('clear-cache-btn');
+    btn.disabled = true;
+    btn.textContent = 'Clearing…';
+    try {
+      const r = await fetch('http://localhost:5000/api/clear-cache', { method: 'POST' });
+      const d = await r.json();
+      btn.textContent = d.cleared > 0 ? `Cleared (${d.cleared})` : 'Already clean';
+      setTimeout(() => { btn.textContent = 'Clear Cache'; btn.disabled = false; }, 2500);
+    } catch(e) {
+      btn.textContent = 'Error';
+      setTimeout(() => { btn.textContent = 'Clear Cache'; btn.disabled = false; }, 2000);
+    }
   }
 
   async function cancelFinalize() {

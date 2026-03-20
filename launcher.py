@@ -251,6 +251,32 @@ def api_start_proxy():
     return jsonify({"ok": True})
 
 
+@app.route("/api/clear-cache", methods=["POST"])
+def api_clear_cache():
+    """Delete all __pycache__ folders and .pyc files in the project."""
+    import shutil
+    removed = []
+    for root, dirs, files in os.walk(str(PROJECT_DIR)):
+        for d in dirs:
+            if d == "__pycache__":
+                full = os.path.join(root, d)
+                try:
+                    shutil.rmtree(full)
+                    removed.append(full)
+                except Exception as e:
+                    print(f"[Cache] Could not remove {full}: {e}")
+        for f in files:
+            if f.endswith(".pyc"):
+                full = os.path.join(root, f)
+                try:
+                    os.remove(full)
+                    removed.append(full)
+                except Exception:
+                    pass
+    print(f"[Cache] Cleared {len(removed)} cache item(s).")
+    return jsonify({"ok": True, "cleared": len(removed)})
+
+
 @app.route("/api/reset-config", methods=["POST"])
 def api_reset_config():
     """Reset configuration (go back to setup)."""
