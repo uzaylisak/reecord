@@ -29,14 +29,12 @@ Ollama Chat  →  REE Proof  →  AES-256-GCM Encryption  →  Pinata IPFS  → 
 
 ## Requirements
 
-Before you start, install the following:
-
-| Requirement | Version | Link |
-|---|---|---|
-| Python | 3.10+ | [python.org](https://www.python.org/downloads/) |
-| Docker Desktop | Latest | [docker.com](https://www.docker.com/products/docker-desktop/) |
-| Ollama | Latest | [ollama.com](https://ollama.com/download) |
-| Git for Windows | Latest | [git-scm.com](https://git-scm.com/) (Windows only) |
+| Requirement | Link |
+|---|---|
+| Python 3.10+ | [python.org](https://www.python.org/downloads/) |
+| Docker Desktop | [docker.com](https://www.docker.com/products/docker-desktop/) |
+| Ollama | [ollama.com](https://ollama.com/download) |
+| Git | [git-scm.com](https://git-scm.com/) |
 
 ---
 
@@ -49,13 +47,67 @@ git clone https://github.com/uzaylisak/reecord.git
 cd reecord
 ```
 
-### 2. Install Python dependencies
+---
+
+### 2. Install prerequisites
+
+<details>
+<summary><b>Windows</b></summary>
+
+1. Install [Python 3.10+](https://www.python.org/downloads/) — check **Add to PATH** during install
+2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it
+3. Install [Ollama](https://ollama.com/download/windows)
+4. Install [Git for Windows](https://git-scm.com/) (required to run `.sh` scripts)
+
+</details>
+
+<details>
+<summary><b>Linux (Ubuntu / Debian)</b></summary>
+
+```bash
+# Python
+sudo apt update && sudo apt install python3 python3-pip git -y
+
+# Docker
+sudo apt install docker.io -y
+sudo systemctl start docker
+sudo usermod -aG docker $USER   # log out and back in after this
+
+# Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+</details>
+
+<details>
+<summary><b>macOS</b></summary>
+
+```bash
+# Homebrew (if not installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Python & Git (comes with Xcode tools, or via brew)
+brew install python git
+
+# Ollama
+brew install ollama
+```
+
+Also install [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/).
+
+</details>
+
+---
+
+### 3. Install Python dependencies
 
 ```bash
 pip install flask requests web3 pycryptodome eth-account python-dotenv
 ```
 
-### 3. Pull an Ollama model
+---
+
+### 4. Pull an Ollama model
 
 ```bash
 ollama pull qwen2:0.5b
@@ -63,13 +115,17 @@ ollama pull qwen2:0.5b
 
 > REEcord uses Gensyn's REE for cryptographic proof generation. Only [REE-supported models](https://docs.gensyn.ai/tech/ree/supported-models) can be finalized on-chain. `qwen2:0.5b` is recommended as a starting point — larger models work but will be slower depending on your hardware.
 
-### 4. Pull the REE Docker image
+---
+
+### 5. Pull the REE Docker image
 
 ```bash
 docker pull gensynai/ree:v0.1.0
 ```
 
-### 5. Configure credentials
+---
+
+### 6. Configure credentials
 
 Copy `.env.example` to `.env` and fill in your values:
 
@@ -92,7 +148,7 @@ PINATA_API_KEY=your_pinata_jwt_here
 2. Create a new account
 3. Add Gensyn Testnet: Chain ID `685685`, RPC `https://gensyn-testnet.g.alchemy.com/public`
 4. Export private key: MetaMask → Account Details → Export Private Key
-5. Get testnet ETH tokens from the [Gensyn faucet](https://gensyn.ai)
+5. Get testnet ETH tokens from the [Gensyn faucet](https://www.alchemy.com/faucets/gensyn-testnet)
 
 #### Getting a Pinata JWT (optional)
 1. Sign up at [app.pinata.cloud](https://app.pinata.cloud)
@@ -101,7 +157,9 @@ PINATA_API_KEY=your_pinata_jwt_here
 
 > Without Pinata, receipts use a local SHA-256 hash fallback instead of IPFS.
 
-### 6. Start REEcord
+---
+
+### 7. Start REEcord
 
 ```bash
 python launcher.py
@@ -141,8 +199,8 @@ python launcher.py
 
 Once finalized, you can verify your on-chain recording at **[reecord.click](https://reecord.click)**:
 
-- Paste your **TX hash** or connect your **wallet** to find your recordings
-- View the IPFS receipt link and confirm it matches what was submitted
+- Connect your **wallet** to see all your recordings
+- Paste a **TX hash** to publicly verify any receipt
 - Check the transaction on [Gensyn Testnet Explorer](https://gensyn-testnet.explorer.alchemy.com) to verify the on-chain proof
 - The smart contract stores the receipt hash, IPFS CID, and model name — all publicly verifiable
 
@@ -157,14 +215,13 @@ reecord/
 ├── ree_runner.py        # REE Docker wrapper
 ├── testnet_submitter.py # IPFS upload + Gensyn Testnet TX
 ├── crypto_utils.py      # AES-256-GCM encryption
-├── run_ree.sh           # Shell script to run REE Docker container
+├── run_ree.sh           # Shell script to run REE Docker container (cross-platform)
 ├── contract_address.json# Smart contract address + ABI
 ├── contracts/
 │   └── ReceiptRegistry.sol  # Solidity contract source
 ├── web_ui/
 │   ├── chat.html        # Main chat interface
-│   ├── setup.html       # First-run credential setup
-│   └── index.html       # Landing page
+│   └── setup.html       # First-run credential setup
 └── .env.example         # Environment variable template
 ```
 
@@ -195,6 +252,11 @@ Make sure Docker Desktop is running before starting REEcord.
 
 **Ollama not found**
 Make sure Ollama is running: `ollama serve`
+
+**Permission denied on run_ree.sh (Linux/macOS)**
+```bash
+chmod +x run_ree.sh
+```
 
 ---
 
