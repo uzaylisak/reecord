@@ -9,6 +9,8 @@ Chat with a local AI model via Ollama, then finalize the conversation — REE ge
 
 🌐 **[reecord.click](https://reecord.click)** — Browse all on-chain recorded conversations, verify receipts, and explore the transaction history on Gensyn Testnet.
 
+💬 **[Telegram Support Group](https://t.me/+0vcuDovbHVc4ZTk8)** — Having issues or questions? Join our group for help.
+
 ---
 
 ## How it works
