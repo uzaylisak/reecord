@@ -361,7 +361,7 @@
   <div id="messages">
     <div class="empty-state" id="empty-state">
       <div class="icon"><div style="width:32px;height:32px;background:#e03131;border-radius:50%;box-shadow:0 0 16px rgba(224,49,49,0.5);"></div></div>
-      <p>Start a conversation.<br>When ready, click <strong style="color:rgba(255,255,255,0.6)">Finalize &amp; Record</strong> to anchor it on-chain.</p>
+      <p>Start a conversation.</p>
     </div>
   </div>
 
@@ -485,7 +485,7 @@
   function renderMessages(messages) {
     const el = document.getElementById('messages');
     if (!messages.length) {
-      el.innerHTML = '<div class="empty-state" id="empty-state"><div class="icon"><div style="width:32px;height:32px;background:#e03131;border-radius:50%;box-shadow:0 0 16px rgba(224,49,49,0.5);"></div></div><p>Start a conversation.<br>When ready, click <strong style="color:rgba(255,255,255,0.6)">Finalize &amp; Record</strong> to anchor it on-chain.</p></div>';
+      el.innerHTML = '<div class="empty-state" id="empty-state"><div class="icon"><div style="width:32px;height:32px;background:#e03131;border-radius:50%;box-shadow:0 0 16px rgba(224,49,49,0.5);"></div></div><p>Start a conversation.</p></div>';
       return;
     }
     el.innerHTML = messages.map(m =>
@@ -498,7 +498,7 @@
     currentSession = null;
     finalizeJobId = null;
     clearInterval(finalizePolling);
-    document.getElementById('messages').innerHTML = '<div class="empty-state" id="empty-state"><div class="icon">⬡</div><p>Start a conversation.<br>When ready, click <strong style="color:rgba(255,255,255,0.6)">Finalize &amp; Record</strong> to anchor it on-chain.</p></div>';
+    document.getElementById('messages').innerHTML = '<div class="empty-state" id="empty-state"><div class="icon">⬡</div><p>Start a conversation.</p></div>';
     document.getElementById('finalize-btn').disabled = true;
     document.getElementById('finalize-status').textContent = '';
     document.getElementById('finalize-status').className = 'finalize-status';
